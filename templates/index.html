@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Finance Tracker</title>
+</head>
+<script>
+    document.querySelector("form").addEventListener("submit", function(e) {
+        const from = document.querySelector("select[name='from_wallet']").value;
+        const to = document.querySelector("select[name='to_wallet']").value;
+        if (from === to) {
+            alert("⚠️ No puedes transferir entre la misma cartera.");
+            e.preventDefault();
+        }
+    });
+    </script>
+<body>
+    <h1>Finance Tracker</h1>
+
+    <!-- Resumen -->
+    <h2>Resumen</h2>
+    <ul>
+        <li><strong>Total Ingresos:</strong> ${{ '%.2f'|format(total_income) }}</li>
+        <li><strong>Total Gastos:</strong> ${{ '%.2f'|format(total_expense) }}</li>
+        <li><strong>Balance:</strong> ${{ '%.2f'|format(balance) }}</li>
+        <li><strong>💳 Deudas Pendientes:</strong> ${{ '%.2f'|format(total_active_loans) }}</li>
+    </ul>
+
+    <!-- Filtros -->
+    <h2>Filtros</h2>
+    <form method="GET" action="/">
+        <label>Categoría:</label>
+        <input type="text" name="category" value="{{ request.args.get('category', '') }}">
+
+        <label>Desde:</label>
+        <input type="date" name="start_date" value="{{ request.args.get('start_date', '') }}">
+
+        <label>Hasta:</label>
+        <input type="date" name="end_date" value="{{ request.args.get('end_date', '') }}">
+
+        <button type="submit">Filtrar</button>
+    </form>
+
+    <hr>
+
+    <p>
+        <a href="/add">➕ Agregar Transacción</a> |
+        <a href="/wallets">🏦 Ver Carteras</a> |
+        <a href="/loans">📄 Ver Deudas</a>
+        <a href="/transfers">🔁 Transferencias</a>
+        <a href="/wallet-summary">📊 Resumen por Cartera</a>
+    </p>
+
+    {% if transactions %}
+    <table border="1" cellpadding="8">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Monto</th>
+                <th>Categoría</th>
+                <th>Tipo</th>
+                <th>Nota</th>
+                <th>Cartera</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in transactions %}
+            <tr>
+                <td>{{ t.date.strftime('%Y-%m-%d') }}</td>
+                <td>${{ '%.2f'|format(t.amount) }}</td>
+                <td>{{ t.category }}</td>
+                <td>{{ 'Ingreso' if t.type == 'income' else 'Gasto' }}</td>
+                <td>{{ t.note }}</td>
+                <td>{{ t.wallet.name if t.wallet else '—' }}</td>
+                <td>
+                    <a href="/edit/{{ t.id }}">✏️ Editar</a>
+                    <form action="/delete/{{ t.id }}" method="POST" style="display:inline;">
+                        <button type="submit" onclick="return confirm('¿Seguro que deseas eliminar esta transacción?')">🗑️ Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No hay transacciones para mostrar.</p>
+    {% endif %}
+</body>
+</html>

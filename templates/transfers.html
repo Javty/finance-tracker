@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transferencias</title>
+</head>
+<body>
+    <h1>Registrar Transferencia</h1>
+
+    <form method="POST">
+        <label>Desde:</label>
+        <select name="from_wallet" required>
+            <option value="">-- Selecciona una cartera --</option>
+            {% for wallet in wallets %}
+                <option value="{{ wallet.id }}">{{ wallet.name }} ({{ wallet.type }})</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label>Hacia:</label>
+        <select name="to_wallet" required>
+            <option value="">-- Selecciona una cartera --</option>
+            {% for wallet in wallets %}
+                <option value="{{ wallet.id }}">{{ wallet.name }} ({{ wallet.type }})</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label>Monto:</label>
+        <input type="number" step="0.01" name="amount" required><br><br>
+
+        <label>Fecha:</label>
+        <input type="date" name="date" required><br><br>
+
+        <label>Nota (opcional):</label>
+        <input type="text" name="note"><br><br>
+
+        <button type="submit">Guardar Transferencia</button>
+    </form>
+
+    <hr>
+
+    <h2>Historial de Transferencias</h2>
+    {% if transfers %}
+    <ul>
+        {% for t in transfers %}
+        <li>
+            ${{ '%.2f'|format(t.amount) }} - {{ t.date.strftime('%Y-%m-%d') }}<br>
+            De <strong>{{ t.from_wallet.name }}</strong> → <strong>{{ t.to_wallet.name }}</strong><br>
+            {% if t.note %}<em>Nota:</em> {{ t.note }}<br>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No hay transferencias registradas.</p>
+    {% endif %}
+
+    <p><a href="/">⬅️ Volver al inicio</a></p>
+</body>
+</html>

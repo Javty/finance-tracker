@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mis Carteras</title>
+</head>
+<body>
+    <h1>Mis Carteras</h1>
+
+    <p><a href="/wallets/add">➕ Agregar nueva cartera</a></p>
+
+    <hr>
+
+    <h2>Lista de Carteras</h2>
+    <ul>
+        {% for wallet in wallets %}
+        <li>
+            <strong>{{ wallet.name }}</strong> ({{ wallet.type }})
+            {% if wallet.type == 'Crédito' %}
+            - Corte: {{ wallet.cutoff_day }} - Límite: ${{ '%.2f'|format(wallet.limit or 0) }}
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+
+    <p><a href="/">&larr; Volver al inicio</a></p>
+</body>
+</html>

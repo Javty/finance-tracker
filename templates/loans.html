@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Deudas</title>
+</head>
+<body>
+    <h1>Registrar Deuda</h1>
+
+    <form method="POST">
+        <label>A quien le debo:</label>
+        <input type="text" name="lender" required><br><br>
+
+        <label>Monto:</label>
+        <input type="number" step="0.01" name="amount" required><br><br>
+
+        <label>Fecha:</label>
+        <input type="date" name="date" required><br><br>
+
+        <label>Nota (opcional):</label>
+        <input type="text" name="note"><br><br>
+
+        <label>Cartera:</label>
+        <select name="wallet_id">
+            <option value="">-- Selecciona una cartera --</option>
+            {% for wallet in wallets %}
+                <option value="{{ wallet.id }}">{{ wallet.name }} ({{ wallet.type }})</option>
+            {% endfor %}
+        </select><br><br>
+
+        <button type="submit">Guardar Deuda</button>
+    </form>
+
+    <hr>
+
+    <h2>Resumen de Deudas</h2>
+    <ul>
+        <li><strong>Total deudas activas:</strong> ${{ '%.2f'|format(total_active) }}</li>
+        <li><strong>Total deudas pagadas:</strong> ${{ '%.2f'|format(total_paid) }}</li>
+    </ul>
+
+    <h2>Deudas Pendientes</h2>
+    {% if loans %}
+    <ul>
+        {% for loan in loans %}
+        <li>
+            <strong>{{ loan.lender }}</strong> - ${{ '%.2f'|format(loan.amount) }} - {{ loan.date.strftime('%Y-%m-%d') }}<br>
+            {% if loan.wallet %}<em>Vinculada a:</em> {{ loan.wallet.name }} ({{ loan.wallet.type }})<br>{% endif %}
+            {% if loan.note %}<em>Nota:</em> {{ loan.note }}<br>{% endif %}
+            <form method="POST" action="/loans/{{ loan.id }}/pay">
+                <button type="submit" onclick="return confirm('Marcar esta deuda como pagada?')">✅ Marcar como pagada</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No tienes deudas registradas.</p>
+    {% endif %}
+
+    <p><a href="/">⬅️ Volver al inicio</a></p>
+</body>
+</html>

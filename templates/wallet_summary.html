@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resumen por Cartera</title>
+    <style>
+        .negativo {
+            color: red;
+            font-weight: bold;
+        }
+        .positivo {
+            color: green;
+        }
+        tfoot {
+            font-weight: bold;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Resumen por Cartera</h1>
+    <p><a href="/wallets/add">➕ Agregar nueva cartera</a></p>
+
+    <table border="1" cellpadding="8">
+        <thead>
+            <tr>
+                <th>Cartera</th>
+                <th>Tipo</th>
+                <th>Balance Inicial</th>
+                <th>Ingresos</th>
+                <th>Gastos</th>
+                <th>Entradas por Transferencia</th>
+                <th>Salidas por Transferencia</th>
+                <th>Deuda Asociada</th>
+                <th>Saldo Neto</th>
+                <th>Saldo Disponible</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for summary in summaries %}
+            <tr>
+                <td>{{ summary.wallet.name }}</td>
+                <td>{{ summary.wallet.type }}</td>
+                <td>${{ '%.2f'|format(summary.initial_balance) }}</td>
+                <td>${{ '%.2f'|format(summary.income) }}</td>
+                <td>${{ '%.2f'|format(summary.expense) }}</td>
+                <td>${{ '%.2f'|format(summary.transfer_in) }}</td>
+                <td>${{ '%.2f'|format(summary.transfer_out) }}</td>
+                <td>${{ '%.2f'|format(summary.loan_total) }}</td>
+                <td class="{{ 'negativo' if summary.net_balance < 0 else 'positivo' }}">
+                    ${{ '%.2f'|format(summary.net_balance) }}
+                </td>
+                <td class="{{ 'negativo' if (summary.net_balance + summary.loan_total) < 0 else 'positivo' }}">
+                    ${{ '%.2f'|format(summary.net_balance + summary.loan_total) }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="8">Total Global (Saldo Neto)</td>
+                <td class="{{ 'negativo' if total_balance < 0 else 'positivo' }}">
+                    ${{ '%.2f'|format(total_balance) }}
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td colspan="8">Total Global (Saldo Disponible)</td>
+                <td class="{{ 'negativo' if total_balance + total_loans < 0 else 'positivo' }}">
+                    ${{ '%.2f'|format(total_balance + total_loans) }}
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <p><a href="/">⬅️ Volver al inicio</a></p>
+</body>
+</html>

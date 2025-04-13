@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Editar Transacción</title>
+</head>
+<body>
+    <h1>Editar Transacción</h1>
+
+    <form method="POST">
+        <label>Tipo:</label>
+        <select name="type" required>
+            <option value="income" {% if transaction.type == 'income' %}selected{% endif %}>Ingreso</option>
+            <option value="expense" {% if transaction.type == 'expense' %}selected{% endif %}>Gasto</option>
+        </select><br><br>
+
+        <label>Monto:</label>
+        <input type="number" step="0.01" name="amount" value="{{ transaction.amount | abs }}" required><br><br>
+
+        <label>Categoría:</label>
+        <select name="category" required>
+            <optgroup label="Ingresos">
+                <option value="Sueldo" {% if transaction.category == 'Sueldo' %}selected{% endif %}>Sueldo</option>
+                <option value="Freelance" {% if transaction.category == 'Freelance' %}selected{% endif %}>Freelance</option>
+                <option value="Inversiones" {% if transaction.category == 'Inversiones' %}selected{% endif %}>Inversiones</option>
+                <option value="Reembolsos" {% if transaction.category == 'Reembolsos' %}selected{% endif %}>Reembolsos</option>
+                <option value="Otros ingresos" {% if transaction.category == 'Otros ingresos' %}selected{% endif %}>Otros ingresos</option>
+            </optgroup>
+            <optgroup label="Gastos">
+                <option value="Comida" {% if transaction.category == 'Comida' %}selected{% endif %}>Comida</option>
+                <option value="Transporte" {% if transaction.category == 'Transporte' %}selected{% endif %}>Transporte</option>
+                <option value="Renta" {% if transaction.category == 'Renta' %}selected{% endif %}>Renta</option>
+                <option value="Servicios" {% if transaction.category == 'Servicios' %}selected{% endif %}>Servicios</option>
+                <option value="Educación" {% if transaction.category == 'Educación' %}selected{% endif %}>Educación</option>
+                <option value="Entretenimiento" {% if transaction.category == 'Entretenimiento' %}selected{% endif %}>Entretenimiento</option>
+                <option value="Salud" {% if transaction.category == 'Salud' %}selected{% endif %}>Salud</option>
+                <option value="Ahorro" {% if transaction.category == 'Ahorro' %}selected{% endif %}>Ahorro</option>
+                <option value="Tarjeta de crédito" {% if transaction.category == 'Tarjeta de crédito' %}selected{% endif %}>Tarjeta de crédito</option>
+                <option value="Otros gastos" {% if transaction.category == 'Otros gastos' %}selected{% endif %}>Otros gastos</option>
+            </optgroup>
+        </select><br><br>
+
+        <label>Nota:</label>
+        <input type="text" name="note" value="{{ transaction.note }}"><br><br>
+
+        <label>Fecha:</label>
+        <input type="date" name="date" value="{{ transaction.date.strftime('%Y-%m-%d') }}" required><br><br>
+
+        <button type="submit">Guardar Cambios</button>
+    </form>
+
+    <p><a href="/">⬅️ Volver al inicio</a></p>
+</body>
+</html>
