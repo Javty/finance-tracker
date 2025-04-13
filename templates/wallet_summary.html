@@ -9,6 +9,13 @@
         }
         .positivo {
             color: green;
+            font-weight: bold;
+        }
+        .disponible {
+            background-color: #e8f5e9;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
         }
         tfoot {
             font-weight: bold;
@@ -31,8 +38,8 @@
                 <th>Entradas por Transferencia</th>
                 <th>Salidas por Transferencia</th>
                 <th>Deuda Asociada</th>
-                <th>Saldo Neto</th>
                 <th>Saldo Disponible</th>
+                <th>Saldo Neto</th>
             </tr>
         </thead>
         <tbody>
@@ -41,32 +48,39 @@
                 <td>{{ summary.wallet.name }}</td>
                 <td>{{ summary.wallet.type }}</td>
                 <td>${{ '%.2f'|format(summary.initial_balance) }}</td>
-                <td>${{ '%.2f'|format(summary.income) }}</td>
+                <td>
+                    {% if summary.wallet.type.lower() == 'crédito' %}
+                        $0.00
+                    {% else %}
+                        ${{ '%.2f'|format(summary.income) }}
+                    {% endif %}
+                </td>
                 <td>${{ '%.2f'|format(summary.expense) }}</td>
                 <td>${{ '%.2f'|format(summary.transfer_in) }}</td>
                 <td>${{ '%.2f'|format(summary.transfer_out) }}</td>
                 <td>${{ '%.2f'|format(summary.loan_total) }}</td>
+                <td class="disponible {{ 'negativo' if (summary.net_balance + summary.loan_total) < 0 else 'positivo' }}">
+                    ${{ '%.2f'|format(summary.net_balance + summary.loan_total) }}
+                </td>
                 <td class="{{ 'negativo' if summary.net_balance < 0 else 'positivo' }}">
                     ${{ '%.2f'|format(summary.net_balance) }}
-                </td>
-                <td class="{{ 'negativo' if (summary.net_balance + summary.loan_total) < 0 else 'positivo' }}">
-                    ${{ '%.2f'|format(summary.net_balance + summary.loan_total) }}
                 </td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="8">Total Global (Saldo Neto)</td>
-                <td class="{{ 'negativo' if total_balance < 0 else 'positivo' }}">
-                    ${{ '%.2f'|format(total_balance) }}
+                <td colspan="8">Total Global (Saldo Disponible)</td>
+                <td class="disponible {{ 'negativo' if total_balance + total_loans < 0 else 'positivo' }}">
+                    ${{ '%.2f'|format(total_balance + total_loans) }}
                 </td>
                 <td></td>
             </tr>
             <tr>
-                <td colspan="8">Total Global (Saldo Disponible)</td>
-                <td class="{{ 'negativo' if total_balance + total_loans < 0 else 'positivo' }}">
-                    ${{ '%.2f'|format(total_balance + total_loans) }}
+                <td colspan="8">Total Global (Saldo Neto)</td>
+                <td></td>
+                <td class="{{ 'negativo' if total_balance < 0 else 'positivo' }}">
+                    ${{ '%.2f'|format(total_balance) }}
                 </td>
             </tr>
         </tfoot>
