@@ -41,6 +41,19 @@
     window.onload = function () {
         updateCategories();
         checkWalletTypeForIncome();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const message = urlParams.get('message');
+        if (message) {
+            const msgBox = document.createElement('div');
+            msgBox.textContent = decodeURIComponent(message);
+            msgBox.style.backgroundColor = '#d4edda';
+            msgBox.style.color = '#155724';
+            msgBox.style.padding = '10px';
+            msgBox.style.borderRadius = '5px';
+            msgBox.style.marginBottom = '20px';
+            document.body.insertBefore(msgBox, document.body.firstChild);
+        }
     };
     </script>
 </head>
@@ -68,13 +81,18 @@
         </select><br><br>
 
         <label>Monto:</label>
-        <input type="number" step="0.01" name="amount" required><br><br>
+        <input type="number" step="0.01" min="0.01" max="1000000" name="amount" placeholder="0" maxlength="8" required><br><br>
 
         <label>Fecha:</label>
-        <input type="date" name="date" value="{{ current_date }}" required><br><br>
+        <input type="date" name="date" value="{{ current_date }}" max="{{ current_date }}" required><br><br>
 
         <label>Nota (opcional):</label>
         <input type="text" name="note"><br><br>
+
+        <label>
+            <input type="checkbox" name="add_another" value="1">
+            Agregar otra transacción después de guardar
+        </label><br><br>
 
         <button type="submit">Guardar Transacción</button>
     </form>

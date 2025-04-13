@@ -95,12 +95,29 @@ def add_transaction():
     if not wallets:
         return "Primero debes crear una cartera antes de registrar una transacción."
 
+    message = request.args.get('message')
+
     if request.method == 'POST':
-        amount = float(request.form['amount'])
+        try:
+            amount = float(request.form['amount'])
+        except ValueError:
+            return "El monto debe ser un número válido."
+
+        if amount <= 0:
+            return "El monto debe ser mayor a 0."
+        if amount > 1000000:
+            return "El monto no puede ser mayor a 1,000,000."
+        if round(amount, 2) != amount:
+            return "El monto no puede tener más de dos decimales."
+
         t_type = request.form['type']
         category = request.form['category']
         note = request.form['note']
         date = datetime.strptime(request.form['date'], '%Y-%m-%d')
+        add_another = request.form.get('add_another') == '1'
+
+        if date > datetime.today():
+            return "La fecha no puede ser mayor a la actual."
 
         wallet_id = request.form.get('wallet_id') or None
         if not wallet_id:
@@ -108,8 +125,8 @@ def add_transaction():
 
         wallet = Wallet.query.get(int(wallet_id))
 
-        # Si es GASTO en tarjeta de CRÉDITO, lo registramos como deuda (Loan)
         if t_type == 'expense' and wallet.type.lower() == 'crédito':
+            # Registrar como deuda
             new_loan = Loan(
                 lender='Gasto con tarjeta',
                 amount=amount,
@@ -119,7 +136,8 @@ def add_transaction():
                 note=note or f"Gasto en tarjeta: {category}"
             )
             db.session.add(new_loan)
-        else:
+
+            # También crear la transacción para reflejar gasto en reportes
             new_transaction = Transaction(
                 amount=amount,
                 category=category,
@@ -130,10 +148,29 @@ def add_transaction():
             )
             db.session.add(new_transaction)
 
-        db.session.commit()
-        return redirect(url_for('index'))
+            db.session.commit()
+            message = '✅ Registrada como deuda (y como gasto en reportes)'
+        else:
+            new_transaction = Transaction(
+                amount=amount,
+                category=category,
+                note=note,
+                date=date,
+                type=t_type,
+                wallet_id=wallet.id
+            )
+            db.session.add(new_transaction)
+            db.session.commit()
+            message = '✅ Transacción registrada correctamente'
 
-    return render_template('add_transaction.html', wallets=wallets, current_date=current_date)
+        if add_another:
+            return redirect(url_for('add_transaction', message=message))
+        else:
+            return redirect(url_for('index'))
+
+    return render_template('add_transaction.html', wallets=wallets, current_date=current_date, message=message)
+
+
 
 
 @app.route('/wallets', methods=['GET', 'POST'])
@@ -163,7 +200,9 @@ def delete_transaction(id):
     transaction = Transaction.query.get_or_404(id)
     db.session.delete(transaction)
     db.session.commit()
-    return redirect(url_for('index'))
+    message = "✅ Transacción registrada correctamente" if t_type == "income" or wallet.type.lower() != "crédito" else "✅ Registrada como deuda (no transacción directa)"
+    return redirect(url_for('add_transaction', message=message))
+
 
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 def edit_transaction(id):
@@ -303,12 +342,16 @@ def wallet_summary():
 
     total_balance = sum(summary['net_balance'] for summary in summaries)
     total_loans = sum(summary['loan_total'] for summary in summaries)
+    total_available = sum(
+        (summary['net_balance'] + summary['loan_total']) for summary in summaries
+    )
 
     return render_template(
         'wallet_summary.html',
         summaries=summaries,
         total_balance=total_balance,
-        total_loans=total_loans
+        total_loans=total_loans,
+        total_available=total_available  # 👈 aquí estaba el faltante
     )
 
 @app.route('/wallets/add', methods=['GET', 'POST'])
