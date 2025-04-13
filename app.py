@@ -2,6 +2,9 @@ import os
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from datetime import date
+
+current_date = date.today().strftime('%Y-%m-%d')
 
 app = Flask(__name__)
 
@@ -89,31 +92,49 @@ def index():
 @app.route('/add', methods=['GET', 'POST'])
 def add_transaction():
     wallets = Wallet.query.all()
+    if not wallets:
+        return "Primero debes crear una cartera antes de registrar una transacción."
 
     if request.method == 'POST':
-        raw_amount = float(request.form['amount'])
+        amount = float(request.form['amount'])
         t_type = request.form['type']
         category = request.form['category']
         note = request.form['note']
         date = datetime.strptime(request.form['date'], '%Y-%m-%d')
 
-        amount = raw_amount if t_type == 'income' else -abs(raw_amount)
         wallet_id = request.form.get('wallet_id') or None
+        if not wallet_id:
+            return "Debes seleccionar una cartera antes de crear una transacción."
 
-        new_transaction = Transaction(
-            amount=amount,
-            category=category,
-            note=note,
-            date=date,
-            type=t_type,
-            wallet_id=int(wallet_id) if wallet_id else None
-        )
+        wallet = Wallet.query.get(int(wallet_id))
 
-        db.session.add(new_transaction)
+        # Si es GASTO en tarjeta de CRÉDITO, lo registramos como deuda (Loan)
+        if t_type == 'expense' and wallet.type.lower() == 'crédito':
+            new_loan = Loan(
+                lender='Gasto con tarjeta',
+                amount=amount,
+                date=date,
+                wallet_id=wallet.id,
+                status='open',
+                note=note or f"Gasto en tarjeta: {category}"
+            )
+            db.session.add(new_loan)
+        else:
+            new_transaction = Transaction(
+                amount=amount,
+                category=category,
+                note=note,
+                date=date,
+                type=t_type,
+                wallet_id=wallet.id
+            )
+            db.session.add(new_transaction)
+
         db.session.commit()
         return redirect(url_for('index'))
 
-    return render_template('add_transaction.html', wallets=wallets)
+    return render_template('add_transaction.html', wallets=wallets, current_date=current_date)
+
 
 @app.route('/wallets', methods=['GET', 'POST'])
 def manage_wallets():
@@ -150,8 +171,9 @@ def edit_transaction(id):
     wallets = Wallet.query.all()
 
     if request.method == 'POST':
+
         raw_amount = float(request.form['amount'])
-        transaction.amount = raw_amount if transaction.type == 'income' else -abs(raw_amount)
+        transaction.amount = float(request.form['amount'])
         transaction.category = request.form['category']
         transaction.note = request.form['note']
         transaction.date = datetime.strptime(request.form['date'], '%Y-%m-%d')
@@ -227,10 +249,25 @@ def manage_transfers():
 
         db.session.add(transfer)
         db.session.commit()
+
+        # 💳 Si se transfiere a una cartera de tipo Crédito, descontar deuda activa
+        to_wallet = Wallet.query.get(to_wallet_id)
+        if to_wallet and to_wallet.type.lower() == 'crédito':
+            credit_loan = Loan.query.filter_by(wallet_id=to_wallet.id, status='open').order_by(Loan.date).first()
+            if credit_loan:
+                credit_loan.amount -= amount
+                if credit_loan.amount <= 0:
+                    credit_loan.amount = 0
+                    credit_loan.status = 'paid'
+                db.session.commit()
+
         return redirect(url_for('manage_transfers'))
 
+    from datetime import date
+    current_date = date.today().strftime('%Y-%m-%d')
     transfers = Transfer.query.order_by(Transfer.date.desc()).all()
-    return render_template('transfers.html', wallets=wallets, transfers=transfers)
+    return render_template('transfers.html', wallets=wallets, transfers=transfers, current_date=current_date)
+
 
 @app.route('/wallet-summary')
 def wallet_summary():
@@ -283,51 +320,56 @@ def add_wallet():
         cutoff_day = request.form.get('cutoff_day') or None
         payment_day = request.form.get('payment_day') or None
 
-        # Usamos los campos separados según el tipo de cartera
-        credit_balance = request.form.get('credit_initial_balance')
-        non_credit_balance = request.form.get('non_credit_initial_balance')
-        initial_balance = float(credit_balance or non_credit_balance or 0)
-
-
+        # Crear la cartera
         new_wallet = Wallet(
             name=name,
             type=type_,
-            initial_balance=initial_balance,
+            initial_balance=0.0,  # Solo se usará para tipos NO crédito
             limit=float(limit) if limit else None,
             cutoff_day=int(cutoff_day) if cutoff_day else None,
             payment_day=int(payment_day) if payment_day else None
         )
-
         db.session.add(new_wallet)
         db.session.commit()
+
+        # Si es crédito → crear deuda inicial
+        if type_.lower() == 'crédito':
+            credit_balance = float(request.form.get('credit_initial_balance') or 0)
+            if credit_balance > 0:
+                new_loan = Loan(
+                    lender='Deuda inicial tarjeta',
+                    amount=credit_balance,
+                    date=datetime.today(),
+                    wallet_id=new_wallet.id,
+                    status='open',
+                    note='Deuda inicial al crear tarjeta de crédito'
+                )
+                db.session.add(new_loan)
+                db.session.commit()
+        else:
+            # Si es banco, efectivo, digital → agregar balance inicial directamente
+            non_credit_balance = float(request.form.get('non_credit_initial_balance') or 0)
+            new_wallet.initial_balance = non_credit_balance
+            db.session.commit()
 
         return redirect(url_for('wallet_summary'))
 
     return render_template('add_wallet.html')
-
 
 @app.route('/wallets/<int:wallet_id>/edit', methods=['GET', 'POST'])
 def edit_wallet(wallet_id):
     wallet = Wallet.query.get_or_404(wallet_id)
 
     if request.method == 'POST':
-        wallet.name = request.form['name']
-        wallet.type = request.form['type']
+        if wallet.type.lower() == 'crédito':
+            wallet.cutoff_day = int(request.form.get('cutoff_day')) if request.form.get('cutoff_day') else None
+            wallet.payment_day = int(request.form.get('payment_day')) if request.form.get('payment_day') else None
+            db.session.commit()
 
-        # Tomar balances según el tipo
-        credit_balance = request.form.get('credit_initial_balance')
-        non_credit_balance = request.form.get('non_credit_initial_balance')
-        wallet.initial_balance = float(credit_balance or non_credit_balance or 0)
-
-        # Otros campos opcionales
-        wallet.limit = float(request.form.get('limit')) if request.form.get('limit') else None
-        wallet.cutoff_day = int(request.form.get('cutoff_day')) if request.form.get('cutoff_day') else None
-        wallet.payment_day = int(request.form.get('payment_day')) if request.form.get('payment_day') else None
-
-        db.session.commit()
         return redirect(url_for('wallet_summary'))
 
     return render_template('edit_wallet.html', wallet=wallet)
+
 
 
 

@@ -32,19 +32,13 @@
 
     <hr>
 
-    <h2>Resumen de Deudas</h2>
-    <ul>
-        <li><strong>Total deudas activas:</strong> ${{ '%.2f'|format(total_active) }}</li>
-        <li><strong>Total deudas pagadas:</strong> ${{ '%.2f'|format(total_paid) }}</li>
-    </ul>
-
     <h2>Deudas Pendientes</h2>
     {% if loans %}
     <ul>
         {% for loan in loans %}
         <li>
             <strong>{{ loan.lender }}</strong> - ${{ '%.2f'|format(loan.amount) }} - {{ loan.date.strftime('%Y-%m-%d') }}<br>
-            {% if loan.wallet %}<em>Vinculada a:</em> {{ loan.wallet.name }} ({{ loan.wallet.type }})<br>{% endif %}
+            {% if loan.wallet %}<em>Cartera:</em> {{ loan.wallet.name }} ({{ loan.wallet.type }})<br>{% endif %}
             {% if loan.note %}<em>Nota:</em> {{ loan.note }}<br>{% endif %}
             <form method="POST" action="/loans/{{ loan.id }}/pay">
                 <button type="submit" onclick="return confirm('Marcar esta deuda como pagada?')">✅ Marcar como pagada</button>
@@ -54,6 +48,24 @@
     </ul>
     {% else %}
     <p>No tienes deudas registradas.</p>
+    {% endif %}
+
+    <hr>
+
+    <h2>Deudas Pagadas</h2>
+    {% if paid_loans %}
+    <ul>
+        {% for loan in paid_loans %}
+        <li>
+            <strong>{{ loan.lender }}</strong> - Pagada - {{ loan.date.strftime('%Y-%m-%d') }}<br>
+            Monto original: ${{ '%.2f'|format(loan.amount) }}<br>
+            {% if loan.wallet %}<em>Cartera:</em> {{ loan.wallet.name }} ({{ loan.wallet.type }})<br>{% endif %}
+            {% if loan.note %}<em>Nota:</em> {{ loan.note }}<br>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No hay deudas pagadas aún.</p>
     {% endif %}
 
     <p><a href="/">⬅️ Volver al inicio</a></p>

@@ -2,67 +2,24 @@
 <html>
 <head>
     <title>Editar Cartera</title>
-    <script>
-    function toggleCreditFields() {
-        const typeSelect = document.getElementById('type');
-        const creditFields = document.getElementById('credit-fields');
-        const nonCreditFields = document.getElementById('non-credit-fields');
-        const creditInput = creditFields.querySelector('input[name="credit_initial_balance"]');
-        const nonCreditInput = nonCreditFields.querySelector('input[name="non_credit_initial_balance"]');
-        const cutoffDayInput = creditFields.querySelector('input[name="cutoff_day"]');
-        const paymentDayInput = creditFields.querySelector('input[name="payment_day"]');
-        const limitInput = creditFields.querySelector('input[name="limit"]');
-
-        const type = typeSelect.value.toLowerCase();
-
-        if (type === 'crédito' || type === 'credito') {
-            creditFields.style.display = 'block';
-            nonCreditFields.style.display = 'none';
-        } else {
-            creditFields.style.display = 'none';
-            nonCreditFields.style.display = 'block';
-        }
-    }
-    </script>
 </head>
-<body onload="toggleCreditFields()">
-    <h1>Editar Cartera</h1>
+<body>
+    <h1>Editar Cartera: {{ wallet.name }}</h1>
 
     <form method="POST">
-        <label>Nombre de la cartera:</label><br>
-        <input type="text" name="name" value="{{ wallet.name }}" required><br><br>
-
-        <label>Tipo:</label><br>
-        <select name="type" id="type" onchange="toggleCreditFields()" required>
-            <option value="">--Selecciona--</option>
-            <option value="Efectivo" {% if wallet.type == 'Efectivo' %}selected{% endif %}>Efectivo</option>
-            <option value="Banco" {% if wallet.type == 'Banco' %}selected{% endif %}>Banco</option>
-            <option value="Crédito" {% if wallet.type == 'Crédito' %}selected{% endif %}>Crédito</option>
-            <option value="Digital" {% if wallet.type == 'Digital' %}selected{% endif %}>Digital</option>
-        </select><br><br>
-
-        <div id="credit-fields" style="display: none;">
-            <label>Límite de crédito:</label><br>
-            <input type="number" step="0.01" name="limit" value="{{ wallet.limit or '' }}"><br><br>
-
-            <label>Balance inicial (estado de cuenta):</label><br>
-            <input type="number" step="0.01" name="credit_initial_balance" value="{{ wallet.initial_balance if wallet.type == 'Crédito' else '' }}"><br><br>
-
+        {% if wallet.type.lower() == 'crédito' %}
             <label>Día de corte:</label><br>
             <input type="number" name="cutoff_day" min="1" max="31" value="{{ wallet.cutoff_day or '' }}"><br><br>
 
             <label>Día de pago:</label><br>
             <input type="number" name="payment_day" min="1" max="31" value="{{ wallet.payment_day or '' }}"><br><br>
-        </div>
+        {% else %}
+            <p>Solo las carteras de tipo <strong>Crédito</strong> permiten editar día de corte y día de pago.</p>
+        {% endif %}
 
-        <div id="non-credit-fields" style="display: none;">
-            <label>Balance inicial:</label><br>
-            <input type="number" step="0.01" name="non_credit_initial_balance" value="{{ wallet.initial_balance if wallet.type != 'Crédito' else '' }}"><br><br>
-        </div>
-
-        <button type="submit">Actualizar</button>
+        <button type="submit">Guardar Cambios</button>
     </form>
 
-    <p><a href="/wallets">&larr; Ver carteras</a></p>
+    <p><a href="/wallets">&larr; Volver a carteras</a></p>
 </body>
 </html>
